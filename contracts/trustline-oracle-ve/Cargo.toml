@@ -1,0 +1,15 @@
+[package]
+name = "trustline-oracle-ve"
+version.workspace = true
+edition.workspace = true
+publish = false
+license.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+trustline-sdk = { workspace = true }
+ve-core = { path = "../ve-core" }

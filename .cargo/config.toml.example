@@ -1,0 +1,7 @@
+# Optional: develop stellar-validation-engine next to stellar-sdk before trustline-sdk is on crates.io.
+# Copy to config.toml (same directory) when building locally.
+#
+#   cp .cargo/config.toml.example .cargo/config.toml
+
+[patch.crates-io]
+trustline-sdk = { path = "../stellar-sdk/crates/trustline-sdk" }

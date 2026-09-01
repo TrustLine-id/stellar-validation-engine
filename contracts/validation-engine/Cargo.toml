@@ -1,0 +1,21 @@
+[package]
+name = "validation-engine"
+version.workspace = true
+edition.workspace = true
+publish = false
+license.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+trustline-sdk = { workspace = true }
+ve-core = { path = "../ve-core" }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+trustline-sdk = { workspace = true, features = ["testutils"] }
+sanctions-list = { path = "../sanctions-list" }
+trustline-registry = { path = "../trustline-registry" }

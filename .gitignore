@@ -1,0 +1,10 @@
+# Rust's output directory
+target
+
+# Local settings
+.soroban
+.stellar
+
+# Local cargo override that redirects trustline-sdk to a sibling checkout.
+# Never commit this: it makes the build work locally while a clean clone fails.
+.cargo/config.toml
