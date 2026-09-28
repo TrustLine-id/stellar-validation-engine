@@ -105,9 +105,10 @@ What this gives you:
   future (`ValidationTooEarly`) or already past its validity window
   (`ValidationExpired`).
 
-Integrators must compute `data` with the same canonical encoding the backend uses. Every
-protected method in the SDK exports a pure `*_intent_data` helper for exactly this purpose,
-and simulating that helper is today the supported way to obtain the bytes.
+Integrators must compute `data` with the same canonical encoding the backend uses:
+`utf8(action_name) || args_xdr` (see `trustline_sdk::encode_intent` / `require_trustline*!`).
+The backend rebuilds those bytes from structured `functionPrototype` + positional args;
+protected contracts no longer export `*_intent_data` simulation helpers.
 
 ---
 
