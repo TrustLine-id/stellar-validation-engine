@@ -201,7 +201,7 @@ Add to your contract (this repo depends on **`trustline-sdk`** from crates.io):
 
 ```toml
 [dependencies]
-trustline-sdk = "0.1"
+trustline-sdk = "0.2"
 soroban-sdk = "27"
 ```
 
@@ -269,7 +269,7 @@ stellar contract invoke --id <VE> -- set_validation_configuration \
 ## Development Notes
 
 - **Soroban SDK**: 27.x (Stellar `soroban-sdk` crate)
-- **Integrator SDK**: `trustline-sdk = "0.1"` from [crates.io](https://crates.io/crates/trustline-sdk) (repo: [stellar-sdk](https://github.com/TrustLine-id/stellar-sdk))
+- **Integrator SDK**: `trustline-sdk = "0.2"` from [crates.io](https://crates.io/crates/trustline-sdk) (repo: [stellar-sdk](https://github.com/TrustLine-id/stellar-sdk))
 - **Proof storage**: temporary entries + ledger TTL; applicative `valid_until` remains the source of truth for certificate expiry
 - **Upgradeability**: instance `upgrade(new_wasm_hash)` with admin auth
 - **Sanctions**: optional; disabled by default until configured via registry key

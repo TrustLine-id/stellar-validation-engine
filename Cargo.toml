@@ -13,7 +13,7 @@ repository = "https://github.com/TrustLine-id/stellar-validation-engine"
 
 [workspace.dependencies]
 soroban-sdk = "27"
-trustline-sdk = "0.1"
+trustline-sdk = "0.2"
 
 [profile.release]
 opt-level = "z"
