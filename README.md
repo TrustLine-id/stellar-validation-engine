@@ -29,6 +29,8 @@ contracts/
   validation-engine/    # Injectable registry constructor (tests / generic deploys)
   trustline-oracle-ve/  # Production VE (hardcoded VALIDATION_REGISTRY in WASM)
   sanctions-list/       # Reference sanctions list (is_sanctioned)
+scripts/
+  deploy-testnet.sh   # Deploy registry + patch VALIDATION_REGISTRY (Trustline core)
 ```
 
 Shared intent hashing and `ValidationMode` live in the published [`trustline-sdk`](https://crates.io/crates/trustline-sdk) crate (repo: [`stellar-sdk`](https://github.com/TrustLine-id/stellar-sdk)). `TxState` and `ValidationOracleClient` live in this package.
@@ -78,7 +80,7 @@ Injectable facade over `ve-core` (`ValidationEngine` contract) whose `__construc
 
 ### trustline-oracle-ve
 
-Production facade over `ve-core` (`TrustlineOracleVE` contract) with the Trustline registry address baked into the WASM (`VALIDATION_REGISTRY`). Prefer this for production; change the registry by patching `registry_address.rs`, rebuilding, and `upgrade`.
+Production facade over `ve-core` (`TrustlineOracleVE` contract) with the Trustline registry address baked into the WASM at **deploy time** (`VALIDATION_REGISTRY` in `registry_address.rs`). Prefer this for production. Patching the const only affects **new** Wasm builds / new deploys; upgrading an existing instance does **not** re-read the const (registry is stored in instance storage at construction).
 
 ## Implementation Contracts
 
@@ -229,33 +231,36 @@ cargo test -p validation-engine --lib
 cargo test -p trustline-registry --lib
 ```
 
-### Deploy (testnet sketch)
+### Deploy (testnet)
 
-Prefer the end-to-end script in the demo app:
+#### Trustline core — `scripts/deploy-testnet.sh`
 
-[`stellar-demo-app/scripts/deploy-testnet.sh`](../stellar-demo-app/scripts/deploy-testnet.sh)
-
-Flow:
-
-1. Deploy `trustline-registry`, then `set_oracle(backend_oracle, true)` (see demo deploy script)
-2. Patch `trustline-oracle-ve/src/registry_address.rs` with the registry id
-3. Build & deploy `trustline-oracle-ve`
-4. Deploy client contracts pointing at that VE
-
-Manual outline:
+Deploys `TrustlineRegistry`, authorizes the backend oracle (`set_oracle`), patches
+`VALIDATION_REGISTRY` (commit this), **uploads** (does not deploy) `trustline-oracle-ve`,
+and appends an entry to [`deployments.json`](deployments.json).
 
 ```bash
-# Registry
-stellar contract deploy --wasm target/wasm32v1-none/release/trustline_registry.wasm ... -- --admin <TL>
-stellar contract invoke --id <REG> -- set_oracle --oracle <ORACLE> --approved true
+export STELLAR_ACCOUNT=alice   # funded CLI identity = registry admin
+# Optional:
+# export STELLAR_NETWORK=testnet
+# export BACKEND_ORACLE=G…
 
-# Patch VALIDATION_REGISTRY, rebuild trustline-oracle-ve, then:
-stellar contract deploy --wasm-hash <TOVE_HASH> ... -- \
+./scripts/deploy-testnet.sh
+```
+
+Clients instantiate a VE with the printed `VE_WASM_HASH`:
+
+```bash
+export VE_WASM_HASH=<hash from deploy / deployments.json>
+export REGISTRY_ID=<C… from deploy / deployments.json>
+stellar contract deploy --wasm-hash "$VE_WASM_HASH" ... -- \
   --admin <ADMIN> \
   --auto-validity-secs 1800 \
   --manual-validity-secs 432000 \
   --max-skew-secs 60
 ```
+
+Commit & push `registry_address.rs` + `deployments.json` after a core deploy you want recorded in git.
 
 Wire a sanctions list (optional):
 
