@@ -1,5 +1,13 @@
 {
   "testnet": {
-    "ve_uploads": []
+    "ve_uploads": [
+      {
+        "wasm_hash": "d975aa687bcc029bcce7fb8c293a5b4745cd7db980270ec10f32682d8256962e",
+        "version": 1,
+        "chain_id": 2,
+        "registry_contract_id": "CAOQSLSB4LGPE4JYWTCVURE76LQC5IZUOWLU3NLELXXD6ATNV6B6LHRT",
+        "registry_version": 2
+      }
+    ]
   }
 }
