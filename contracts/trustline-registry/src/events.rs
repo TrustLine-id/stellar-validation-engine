@@ -31,3 +31,8 @@ pub struct RegistryRecordRemoved {
     pub key: String,
     pub hashed: BytesN<32>,
 }
+
+#[contractevent(topics = ["reg", "upgrade"], data_format = "single-value")]
+pub struct RegistryUpgraded {
+    pub new_wasm_hash: BytesN<32>,
+}

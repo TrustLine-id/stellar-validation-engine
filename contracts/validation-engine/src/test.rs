@@ -1,4 +1,5 @@
 #![cfg(test)]
+extern crate std;
 
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Trustline Digital Asset Ltd.
@@ -411,4 +412,66 @@ fn intent_id_is_deterministic() {
     assert_eq!(a, b);
     let c = intent_id(&env, ValidationMode::Dapp, &sender, &protocol, 43, &data);
     assert_ne!(a, c);
+}
+
+/// Topics of the last event, as symbols, after checking it came from `contract`.
+fn last_event_topics(env: &Env, contract: &Address) -> std::vec::Vec<std::string::String> {
+    use soroban_sdk::testutils::Events as _;
+    use soroban_sdk::xdr::{ContractEventBody, ScVal};
+    let all = env.events().all().filter_by_contract(contract);
+    let event = all.events().last().expect("no event from contract").clone();
+    let ContractEventBody::V0(body) = event.body;
+    body.topics
+        .iter()
+        .map(|t| match t {
+            ScVal::Symbol(sym) => sym.to_utf8_string_lossy(),
+            other => panic!("non-symbol topic {other:?}"),
+        })
+        .collect()
+}
+
+fn topics(_env: &Env, a: &str, b: &str) -> std::vec::Vec<std::string::String> {
+    std::vec![a.into(), b.into()]
+}
+
+#[test]
+fn admin_changes_and_upgrades_emit_events() {
+    let (env, _admin, _oracle, _protocol, client) = setup();
+    let new_admin = Address::generate(&env);
+    let new_auditor = Address::generate(&env);
+
+    client.set_auditor(&new_auditor);
+    assert_eq!(last_event_topics(&env, &client.address), topics(&env, "cfg", "auditor"));
+
+    client.transfer_admin(&new_admin);
+    assert_eq!(last_event_topics(&env, &client.address), topics(&env, "cfg", "admin"));
+    assert_eq!(client.admin(), new_admin);
+
+    let wasm_hash = upload_validation_engine_wasm(&env);
+    client.upgrade(&wasm_hash);
+    assert_eq!(last_event_topics(&env, &client.address), topics(&env, "cfg", "upgrade"));
+}
+
+#[test]
+fn constructor_rejects_unusable_validity_settings() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let registry = Address::generate(&env);
+    let max = ve_core::MAX_VALIDITY_SECS;
+    // (auto, manual, skew)
+    let bad: [(u64, u64, u64); 5] = [
+        (0, 432000, 0),
+        (1800, 0, 60),
+        (max + 1, 432000, 60),
+        (1800, max + 1, 60),
+        (1800, 432000, 1801),
+    ];
+    for (auto, manual, skew) in bad {
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            env.register(ValidationEngine, (&admin, &registry, auto, manual, skew));
+        }));
+        assert!(r.is_err(), "accepted auto={auto} manual={manual} skew={skew}");
+    }
+    // Boundaries are accepted.
+    env.register(ValidationEngine, (&admin, &registry, max, max, max));
 }

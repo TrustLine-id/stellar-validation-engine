@@ -38,3 +38,20 @@ pub struct TxApproval {
 pub struct TxExecuted {
     pub final_id: BytesN<32>,
 }
+
+#[contractevent(topics = ["cfg", "admin"], data_format = "vec")]
+pub struct AdminTransferred {
+    pub old_admin: Address,
+    pub new_admin: Address,
+}
+
+#[contractevent(topics = ["cfg", "auditor"], data_format = "vec")]
+pub struct AuditorUpdated {
+    pub old_auditor: Address,
+    pub new_auditor: Address,
+}
+
+#[contractevent(topics = ["cfg", "upgrade"], data_format = "single-value")]
+pub struct Upgraded {
+    pub new_wasm_hash: BytesN<32>,
+}

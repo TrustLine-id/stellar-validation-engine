@@ -17,7 +17,7 @@ use soroban_sdk::{
 mod events;
 use events::{
     RegistryAdminTransferred, RegistryInit, RegistryOracleUpdated, RegistryRecordRemoved,
-    RegistryRecordSet,
+    RegistryRecordSet, RegistryUpgraded,
 };
 
 #[contract]
@@ -165,11 +165,15 @@ impl TrustlineRegistry {
 
     pub fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
         require_admin(&env);
+        RegistryUpgraded {
+            new_wasm_hash: new_wasm_hash.clone(),
+        }
+        .publish(&env);
         env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 
     pub fn version(_env: Env) -> u32 {
-        2
+        3
     }
 }
 

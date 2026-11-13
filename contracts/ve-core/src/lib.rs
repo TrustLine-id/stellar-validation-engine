@@ -11,12 +11,17 @@
 pub mod clients;
 mod events;
 
-use soroban_sdk::{contracterror, contracttype, Address, Bytes, BytesN, Env, String, Vec};
+use soroban_sdk::{
+    contracterror, contracttype, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
+};
 use trustline_sdk::intent::{final_tx_id, intent_id};
 use trustline_sdk::types::ValidationMode;
 
 use clients::{SanctionsListClient, TrustlineRegistryClient};
-use events::{ConfigInit, ConfigUpdated, TxAdded, TxApproval, TxExecuted, TxPending};
+use events::{
+    AdminTransferred, AuditorUpdated, ConfigInit, ConfigUpdated, TxAdded, TxApproval, TxExecuted,
+    TxPending, Upgraded,
+};
 
 pub use clients::ValidationOracleClient;
 
@@ -39,6 +44,10 @@ impl From<TxState> for u32 {
 }
 
 const WEEK_OF_LEDGERS: u32 = 120_960;
+
+/// Upper bound for `auto_validity_secs` and `manual_validity_secs` (30 days). Keeps the proof
+/// storage TTL derived from them (`validity / 5` ledgers) well under the network maximum.
+pub const MAX_VALIDITY_SECS: u64 = 30 * 86_400;
 
 #[contracttype]
 #[derive(Clone)]
@@ -76,6 +85,7 @@ pub enum Error {
     Sanctioned = 6,
     NotPending = 7,
     SanctionsKeyUnknown = 8,
+    InvalidConfiguration = 9,
 }
 
 pub fn init(
@@ -86,6 +96,16 @@ pub fn init(
     manual_validity_secs: u64,
     max_skew_secs: u64,
 ) {
+    // A zero validity makes every `add_tx` fail; a skew above the auto validity lets an
+    // oracle publish proofs that outlive their storage TTL.
+    if auto_validity_secs == 0
+        || manual_validity_secs == 0
+        || auto_validity_secs > MAX_VALIDITY_SECS
+        || manual_validity_secs > MAX_VALIDITY_SECS
+        || max_skew_secs > auto_validity_secs
+    {
+        panic_with_error!(env, Error::InvalidConfiguration);
+    }
     env.storage().instance().set(&DataKey::Admin, &admin);
     env.storage().instance().set(&DataKey::Registry, &registry);
     env.storage().instance().set(&DataKey::Auditor, &admin);
@@ -127,15 +147,26 @@ pub fn transfer_admin(env: &Env, new_admin: Address) {
     admin.require_auth();
     env.storage().instance().set(&DataKey::Admin, &new_admin);
     bump_instance(env);
+    AdminTransferred {
+        old_admin: admin,
+        new_admin,
+    }
+    .publish(env);
 }
 
 pub fn set_auditor(env: &Env, new_auditor: Address) {
     let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
     admin.require_auth();
+    let old_auditor: Address = env.storage().instance().get(&DataKey::Auditor).unwrap();
     env.storage()
         .instance()
         .set(&DataKey::Auditor, &new_auditor);
     bump_instance(env);
+    AuditorUpdated {
+        old_auditor,
+        new_auditor,
+    }
+    .publish(env);
 }
 
 /// Configure Trustline / sanctions flags; resolves sanctions list via registry key.
@@ -179,11 +210,15 @@ pub fn set_validation_configuration(
 pub fn upgrade(env: &Env, new_wasm_hash: BytesN<32>) {
     let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
     admin.require_auth();
+    Upgraded {
+        new_wasm_hash: new_wasm_hash.clone(),
+    }
+    .publish(env);
     env.deployer().update_current_contract_wasm(new_wasm_hash);
 }
 
 pub fn version(_env: &Env) -> u32 {
-    1
+    2
 }
 
 pub fn compute_intent_id(

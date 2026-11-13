@@ -1,4 +1,5 @@
 #![cfg(test)]
+extern crate std;
 
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (C) 2026 Trustline Digital Asset Ltd.
@@ -69,4 +70,33 @@ fn get_all_records_lists_live_keys_only() {
     assert_eq!(addrs2.len(), 1);
     assert_eq!(keys2.get(0).unwrap(), key_b);
     assert_eq!(addrs2.get(0).unwrap(), list_b);
+}
+
+#[test]
+fn upgrade_emits_an_event_before_switching_code() {
+    use soroban_sdk::testutils::Events as _;
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let id = env.register(TrustlineRegistry, (&admin,));
+    let client = TrustlineRegistryClient::new(&env, &id);
+    let wasm = soroban_sdk::Bytes::from_slice(
+        &env,
+        include_bytes!("../../../target/wasm32v1-none/release/trustline_registry.wasm"),
+    );
+    let hash = env.deployer().upload_contract_wasm(wasm);
+    client.upgrade(&hash);
+    use soroban_sdk::xdr::{ContractEventBody, ScVal};
+    let all = env.events().all().filter_by_contract(&id);
+    let event = all.events().last().expect("no event").clone();
+    let ContractEventBody::V0(body) = event.body;
+    let topics: std::vec::Vec<std::string::String> = body
+        .topics
+        .iter()
+        .map(|t| match t {
+            ScVal::Symbol(sym) => sym.to_utf8_string_lossy(),
+            other => panic!("non-symbol topic {other:?}"),
+        })
+        .collect();
+    assert_eq!(topics, std::vec!["reg", "upgrade"]);
 }

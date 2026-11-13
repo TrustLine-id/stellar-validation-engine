@@ -147,6 +147,9 @@ means only the protected contract can spend proofs addressed to it.
 | `set_validation_configuration` | `(trustline_enabled: bool, sanctions_enabled: bool, sanctions_key: Option<String>) -> Result<(), Error>` | `admin` |
 | `upgrade` | `(new_wasm_hash: BytesN<32>)` | `admin` |
 
+`transfer_admin`, `set_auditor` and `upgrade` emit `["cfg", "admin"]`, `["cfg", "auditor"]` and
+`["cfg", "upgrade"]` events (the registry's `upgrade` emits `["reg", "upgrade"]`).
+
 `init` sets the auditor to the admin. A deployment using the manual approval path must call
 `set_auditor` to separate the roles. Setting `trustline_enabled = false` disables enforcement
 entirely: see [SECURITY.md](SECURITY.md) for why that is fail open.
@@ -180,6 +183,7 @@ invoked the engine, so a firewall or a protected contract will trap with the eng
 | 6 | `Sanctioned` | The sender or one of the supplied addresses is flagged by the sanctions oracle. |
 | 7 | `NotPending` | `approve_or_reject_tx` was called on an intent that is absent or not in the `Pending` state. |
 | 8 | `SanctionsKeyUnknown` | `set_validation_configuration` enabled sanctions but the registry key was missing or unresolvable. |
+| 9 | `InvalidConfiguration` | Constructor only: `auto_validity_secs` or `manual_validity_secs` is 0 or above 30 days (`MAX_VALIDITY_SECS`), or `max_skew_secs` exceeds `auto_validity_secs`. |
 
 `TxState` values returned by `get_tx_state`: `Approved`, `Rejected`, `Expired`, `Pending`,
 `Unknown`. `Unknown` means no entry exists, which is also what an archived or already
