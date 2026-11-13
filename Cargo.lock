@@ -1915,6 +1915,8 @@ dependencies = [
 [[package]]
 name = "trustline-sdk"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63f89ada2b33a60ba7b9c890b95df8c2a0eea72913b2e92634f3204d4580463b"
 dependencies = [
  "soroban-sdk",
 ]

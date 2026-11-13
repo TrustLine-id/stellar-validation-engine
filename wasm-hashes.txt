@@ -1,0 +1,17 @@
+# Expected sha256 of optimized WASM from `stellar contract build`
+# with the pinned Rust + Stellar CLI in versions.env / rust-toolchain.toml,
+# Cargo.lock, and no local .cargo/config.toml override.
+#
+# trustline_oracle_ve.wasm is the hash clients deploy from deployments.json
+# (it embeds VALIDATION_REGISTRY from registry_address.rs).
+#
+# Regenerate after an intentional contract change:
+#   ./scripts/record-wasm-hashes.sh
+#
+# Verify:
+#   ./scripts/check-wasm-hashes.sh
+
+sanctions_list.wasm a55955ec3702ddc34b5b9c5da9b4284889cc8ab48eded77609f3ff3e63455494
+trustline_oracle_ve.wasm d975aa687bcc029bcce7fb8c293a5b4745cd7db980270ec10f32682d8256962e
+trustline_registry.wasm ac5dbc57dbb277d1f214b8c5f9e38803b4f0d9ec03ef82ed61b3ec4e8beee742
+validation_engine.wasm 271936b28c27f66ddd480c53c9bbae4914acc85847b45eb9bb6ce1fefbe04aaf

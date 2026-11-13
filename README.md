@@ -30,7 +30,11 @@ contracts/
   trustline-oracle-ve/  # Production VE (hardcoded VALIDATION_REGISTRY in WASM)
   sanctions-list/       # Reference sanctions list (is_sanctioned)
 scripts/
-  deploy-testnet.sh   # Deploy registry + patch VALIDATION_REGISTRY (Trustline core)
+  deploy-testnet.sh      # Deploy registry + patch VALIDATION_REGISTRY (Trustline core)
+  check-wasm-hashes.sh   # Verify release WASM digests vs wasm-hashes.txt
+  record-wasm-hashes.sh  # Rebuild and refresh wasm-hashes.txt
+versions.env             # pinned Rust + Stellar CLI (shared with CI)
+wasm-hashes.txt          # expected sha256 of release WASM artifacts
 ```
 
 Shared intent hashing and `ValidationMode` live in the published [`trustline-sdk`](https://crates.io/crates/trustline-sdk) crate (repo: [`stellar-sdk`](https://github.com/TrustLine-id/stellar-sdk)). `TxState` and `ValidationOracleClient` live in this package.
@@ -185,8 +189,8 @@ consumed proof looks like.
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) with target `wasm32v1-none`
-- [Stellar CLI](https://developers.stellar.org/docs/tools/cli) (`stellar`)
+- [Rust](https://rustup.rs/) **1.98.0** with target `wasm32v1-none` ([`rust-toolchain.toml`](rust-toolchain.toml) installs it via rustup)
+- [Stellar CLI](https://developers.stellar.org/docs/tools/cli) **27.1.0** (`stellar`, same pin as [`versions.env`](versions.env) and CI)
 
 ```bash
 rustup target add wasm32v1-none
@@ -213,7 +217,15 @@ For local development alongside an unpublished `trustline-sdk` checkout, see [`.
 
 ```bash
 stellar contract build
+./scripts/check-wasm-hashes.sh
 ```
+
+Builds are reproducible with the pinned Rust (`rust-toolchain.toml`) and Stellar CLI
+(`versions.env`). The sha256 digests of the release WASM must match the committed
+[`wasm-hashes.txt`](wasm-hashes.txt): clients deploy `TrustlineOracleVE` by the hash
+published in `deployments.json`, so anyone can rebuild it from the tagged commit and compare.
+After an intentional contract change, rebuild without a local `.cargo/config.toml` and refresh
+the baselines with `./scripts/record-wasm-hashes.sh`.
 
 ### Test contracts
 
