@@ -15,7 +15,9 @@ on:
 
 jobs:
   clean-clone:
-    name: Clean clone build and test
+    # The job name is the required status check on the default branch (org ruleset
+    # "SOC2 - protect default branch"). Keep it "test" in every repository.
+    name: test
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
